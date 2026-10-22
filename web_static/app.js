@@ -30,7 +30,7 @@ function renderCourses(){const all=courses(),filter=$('programFilter').value,q=$
 function renderSelected(){$('selectedList').replaceChildren();for(const [key,group] of selected){const s=group[0],item=document.createElement('div');item.className='selected-item';const desc=document.createElement('div');const detail=group.map(z=>z.section+(conditional(z)?' (If Required)':'')+': '+z.meetings.map(m=>`${m.day} ${time(m.start)}–${time(m.end)}`).join(', ')).join('  •  ');desc.innerHTML=`<strong>${esc(s.code)} · ${esc(s.title)}</strong><small>${esc(s.program)} · ${group.length} sections</small><small>${esc(detail)}</small>`;const del=document.createElement('button');del.className='remove';del.textContent='×';del.title='Remove course';del.onclick=()=>{selected.delete(key);facultyPrefs.delete(key);renderCourses()};const pref=document.createElement('div');pref.className='faculty-preferences';const hint=document.createElement('div');hint.className='faculty-pref-label';hint.textContent='Preferred faculty (optional)';pref.append(hint);const names=[...new Set(group.map(z=>(z.faculty||'').trim()).filter(n=>n&&n.toUpperCase()!=='TBA'))].sort((a,b)=>a.localeCompare(b));const active=facultyPrefs.get(key)||new Set();for(const name of names){const option=document.createElement('label');option.className='faculty-choice';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=active.has(name);checkbox.onchange=()=>{const chosen=facultyPrefs.get(key)||new Set();if(checkbox.checked)chosen.add(name);else chosen.delete(name);if(chosen.size)facultyPrefs.set(key,chosen);else facultyPrefs.delete(key)};option.append(checkbox,document.createTextNode(name));pref.append(option)}if(!names.length){const no=document.createElement('small');no.textContent='No assigned faculty listed';pref.append(no)}desc.append(pref);item.append(desc,del);$('selectedList').append(item)}$('selectedCount').textContent=`(${selected.size})`;$('generate').disabled=!selected.size}
 $('search').oninput=renderCourses;$('programFilter').onchange=renderCourses;
 $('cancel').onclick=()=>{if(controller){controller.abort();controller=null;$('generateText').textContent='Cancelled. Generated routines were incomplete.';$('generate').disabled=false;$('generatePanel').hidden=true}};
-$('generate').onclick=async()=>{if(!selected.size)return;routines=[];displayedRoutines=[];shown=0;$('routines').replaceChildren();completed=false;conditionalUsed=false;controller=new AbortController();$('generate').disabled=true;$('generatePanel').hidden=false;$('generateText').textContent='Generating conflict-free routines...';$('generateFill').style.width='0%';
+$('generate').onclick=async()=>{if(!selected.size)return;routines=[];displayedRoutines=[];fallbackPopupKey='';shown=0;$('routines').replaceChildren();completed=false;conditionalUsed=false;controller=new AbortController();$('generate').disabled=true;$('generatePanel').hidden=false;$('generateText').textContent='Generating conflict-free routines...';$('generateFill').style.width='0%';
  let lastStatus=null;try{const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({groups:[...selected.values()]}),signal:controller.signal});if(!response.ok){let data=await response.json();throw Error(data.detail||'Generation failed')}
  const reader=response.body.getReader(),decoder=new TextDecoder();let pending='';while(true){const {value,done}=await reader.read();if(done)break;pending+=decoder.decode(value,{stream:true});let pos;while((pos=pending.indexOf('\n'))>=0){const line=pending.slice(0,pos);pending=pending.slice(pos+1);if(!line.trim())continue;const entry=JSON.parse(line);if(entry.type==='routine'){routines.push(entry.sections);if(routines.length===1&&step!==2){view('results');renderResults()};if(routines.length<=20)renderResults()}else if(entry.type==='progress'){$('generateFill').style.width=entry.fraction+'%';$('generateText').textContent=`Generating... ${entry.fraction}%`;}else if(entry.type==='done'){lastStatus=entry;completed=entry.complete;conditionalUsed=entry.conditional_used}else if(entry.type==='error')throw Error(entry.message)}}
  if(!lastStatus)throw Error('Generation stopped before completion');view('results');renderResults(true);
@@ -44,27 +44,53 @@ function timePreferenceScore(routine,mode){
  // A class starting exactly at noon is a noon class.
  return routine.reduce((n,s)=>n+(s.meetings||[]).filter(m=>mode==='morning'?m.start<720:m.start>=720).length,0);
 }
+let fallbackPopupKey='';
+function preferredCount(routine){return routine.reduce((count,s)=>{const p=facultyPrefs.get(identity(s));return count+(p&&p.has(s.faculty)?1:0)},0)}
+function preferredTarget(){return [...facultyPrefs.values()].filter(set=>set.size).length}
+function preferredConflicts(){
+ const groups=[...selected.entries()].map(([key,sections])=>({key,sections:sections.filter(s=>(facultyPrefs.get(key)||new Set()).has(s.faculty))})).filter(g=>g.sections.length);
+ const result=[],seen=new Set();
+ for(let i=0;i<groups.length;i++)for(let j=i+1;j<groups.length;j++){
+  for(const a of groups[i].sections)for(const b of groups[j].sections)
+   for(const x of a.meetings||[])for(const y of b.meetings||[]){
+    const start=Math.max(x.start,y.start),end=Math.min(x.end,y.end);
+    if(x.day!==y.day||start>=end)continue;
+    const key=[a.program,a.code,a.section,b.program,b.code,b.section,x.day,start,end].join('|');
+    if(seen.has(key))continue;seen.add(key);
+    result.push(`${a.code} (${a.section}, ${a.faculty}) and ${b.code} (${b.section}, ${b.faculty}) — ${x.day}, ${time(start)}–${time(end)}`);
+   }
+ }
+ return result;
+}
+function showPreferenceFallback(best,required){
+ const wrapper=document.createElement('div');
+ const note=document.createElement('p');note.textContent=`No valid routine contains all ${required} selected faculty preferences together. Showing conflict-free routines matching ${best} preferred course${best===1?'':'s'} instead.`;wrapper.append(note);
+ const overlaps=preferredConflicts();
+ if(overlaps.length){
+  const intro=document.createElement('p');intro.textContent='These preferred sections have overlapping class times (possible conflicts):';wrapper.append(intro);
+  const list=document.createElement('ul');for(const message of overlaps.slice(0,16)){const li=document.createElement('li');li.textContent=message;list.append(li)}wrapper.append(list);
+  if(overlaps.length>16){const more=document.createElement('p');more.textContent=`And ${overlaps.length-16} more overlapping pairs.`;wrapper.append(more)}
+ }else{
+  const p=document.createElement('p');p.textContent='There is no single direct overlap between the preferred sections found. Their combined choices may still be impossible because of other selected courses or available sections.';wrapper.append(p);
+ }
+ modal('Faculty preference conflict',wrapper);
+}
 function getVisibleRoutines(){
  const chosen=[...document.querySelectorAll('.dayChoice:checked')].map(el=>+el.value);
- const all=$('dayAll').checked||!chosen.length;
- const preferred=$('preferredOnly').checked;
- const mode=$('timeSort').value;
- const rows=routines.map((routine,index)=>({routine,index}));
- const visible=rows.filter(item=>{
-  const dayCount=classDayCount(item.routine);
-  if(dayCount>5||!(all||chosen.includes(dayCount)))return false;
-  if(!preferred)return true;
-  // Every course with an explicit faculty preference must use one of its selected teachers.
-  // Courses without preferences remain unrestricted.
-  if(!facultyPrefs.size)return false;
-  return item.routine.every(section=>{
-    const allowed=facultyPrefs.get(identity(section));
-    return !allowed||!allowed.size||allowed.has(section.faculty);
-  });
- });
- // Sort the matching results; the preferred-only toggle intentionally filters.
- visible.sort((a,b)=>scoreRoutine(b.routine)-scoreRoutine(a.routine)||timePreferenceScore(b.routine,mode)-timePreferenceScore(a.routine,mode)||a.index-b.index);
- return visible;
+ const all=$('dayAll').checked||!chosen.length,preferred=$('preferredOnly').checked,mode=$('timeSort').value;
+ let visible=routines.map((routine,index)=>({routine,index})).filter(item=>{const n=classDayCount(item.routine);return n<=5&&(all||chosen.includes(n))});
+ const target=preferredTarget();
+ let fallback=false,best=0;
+ if(preferred){
+  if(!target)visible=[];
+  else if(visible.length){
+   best=Math.max(...visible.map(item=>preferredCount(item.routine)));
+   fallback=best<target;
+   visible=visible.filter(item=>preferredCount(item.routine)===best);
+  }
+ }
+ visible.sort((a,b)=>preferredCount(b.routine)-preferredCount(a.routine)||timePreferenceScore(b.routine,mode)-timePreferenceScore(a.routine,mode)||a.index-b.index);
+ return {visible,fallback,best,target};
 }
 function routineCard(item){
  const card=document.createElement('article');card.className='routine-card';
@@ -75,7 +101,7 @@ function routineCard(item){
  top.append(heading,extras,save);card.append(top,table(item.routine));return card;
 }
 function renderResults(){
- displayedRoutines=getVisibleRoutines();
+ const preferenceView=getVisibleRoutines();displayedRoutines=preferenceView.visible;
  shown=0;$('routines').replaceChildren();
  const count=displayedRoutines.length,total=routines.length;
  $('resultCount').textContent=count===total?total.toLocaleString():count.toLocaleString()+' / '+total.toLocaleString();
@@ -91,6 +117,8 @@ function renderResults(){
    else feedback='No routines match these filters.';
  }
  if(preferred&&!facultyPrefs.size)feedback='Select a preferred faculty on the Courses page to use this filter.';
+ if(preferred&&preferenceView.fallback)feedback=`No routine matches every preferred faculty. Showing routines with the maximum ${preferenceView.best} of ${preferenceView.target} preferred faculty matches.`;
+ if(preferred&&completed&&preferenceView.fallback){const key=[preferenceView.best,preferenceView.target,[...facultyPrefs].map(([k,v])=>k+':'+[...v].sort().join(',')).sort().join('|'),document.querySelectorAll('.dayChoice:checked').length].join('::');if(fallbackPopupKey!==key){fallbackPopupKey=key;showPreferenceFallback(preferenceView.best,preferenceView.target)}}
  $('filterFeedback').textContent=feedback;
  renderMore(20);
 }
