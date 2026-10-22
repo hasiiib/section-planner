@@ -4,12 +4,12 @@ from pathlib import Path
 from .model import DAYS
 from .scheduler import verify,time_label
 
-HEADERS=['Day','Class Period','Course Code','Course Title','Section','Faculty','Room']
+HEADERS=['Day','Class Period','Course Code','Course Title','Section','Faculty','Credit','Room']
 
 def rows(routine):
     problems=verify(routine)
     if problems:raise ValueError(f'Invalid routine cannot be exported: {problems[:2]}')
-    entries=sorted(((DAYS.index(m.day),m.start,m.day,f'{time_label(m.start)} – {time_label(m.end)}',s.code,s.title,s.section,s.faculty,m.room) for s in routine for m in s.meetings))
+    entries=sorted(((DAYS.index(m.day),m.start,m.day,f'{time_label(m.start)} – {time_label(m.end)}',s.code,s.title,s.section,s.faculty,s.credit if s.credit not in (None, '') else 'Not listed',m.room) for s in routine for m in s.meetings))
     return [list(e[2:]) for e in entries]
 
 def spans(data):
@@ -32,7 +32,7 @@ def export_xlsx(routine,path):
     from openpyxl.styles import Font,PatternFill,Alignment,Border,Side
     from openpyxl.utils import get_column_letter
     data=rows(routine);wb=Workbook();ws=wb.active;ws.title='Class Routine'
-    ws.merge_cells('A1:G1');ws['A1']='Class Routine';ws['A1'].font=Font(size=20,bold=True,color='F47721');ws['A1'].alignment=Alignment(horizontal='center')
+    ws.merge_cells('A1:H1');ws['A1']='Class Routine';ws['A1'].font=Font(size=20,bold=True,color='F47721');ws['A1'].alignment=Alignment(horizontal='center')
     ws.append(HEADERS)
     for item in data:ws.append(item)
     for c in ws[2]:c.fill=PatternFill('solid',fgColor='F47721');c.font=Font(bold=True,color='FFFFFF');c.alignment=Alignment(horizontal='center')
@@ -42,7 +42,7 @@ def export_xlsx(routine,path):
         for c in row:
             c.alignment=Alignment(vertical='center',wrap_text=True)
             c.border=Border(bottom=Side(style='hair',color='E6E9EF'))
-    for i,w in enumerate([13,25,19,52,13,34,27],1):ws.column_dimensions[get_column_letter(i)].width=w
+    for i,w in enumerate([13,25,19,52,13,34,13,27],1):ws.column_dimensions[get_column_letter(i)].width=w
     for i in range(3,3+len(data)):ws.row_dimensions[i].height=40
     ws.freeze_panes='A3';wb.save(path)
 
@@ -56,7 +56,7 @@ def export_pdf(routine,path):
     doc=SimpleDocTemplate(str(path),pagesize=landscape(A3),leftMargin=25,rightMargin=25,topMargin=25,bottomMargin=25)
     style=ParagraphStyle('cell',fontName='Helvetica',fontSize=8,leading=11)
     body=[[Paragraph(str(v),style) for v in HEADERS]]+[[Paragraph(str(v),style) for v in record] for record in data]
-    grid=Table(body,colWidths=[57,139,95,235,65,182,104],repeatRows=1,hAlign='CENTER')
+    grid=Table(body,colWidths=[57,139,95,235,65,182,57,104],repeatRows=1,hAlign='CENTER')
     commands=[('BACKGROUND',(0,0),(-1,0),colors.HexColor('#F47721')),('TEXTCOLOR',(0,0),(-1,0),colors.white),('VALIGN',(0,0),(-1,-1),'MIDDLE'),('BOTTOMPADDING',(0,0),(-1,-1),11),('TOPPADDING',(0,0),(-1,-1),11),('LINEBELOW',(0,0),(-1,0),.8,colors.HexColor('#D65F16')),('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,colors.HexColor('#FFF7F0')])]
     for start,length in spans(data):
         if length>1:commands.append(('SPAN',(0,start+1),(0,start+length)))
@@ -67,7 +67,7 @@ def export_pdf(routine,path):
 
 def export_png(routine,path):
     from PIL import Image,ImageDraw,ImageFont
-    data=rows(routine);widths=[100,235,165,485,105,320,230];w=sum(widths)+40
+    data=rows(routine);widths=[100,235,165,485,105,320,110,230];w=sum(widths)+40
     font_path='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
     try:font=ImageFont.truetype(font_path,18);bold=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',18);titlefont=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',32)
     except OSError:font=bold=titlefont=ImageFont.load_default()
