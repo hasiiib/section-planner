@@ -74,7 +74,8 @@ function renderResults(){
  const preferred=$('preferredOnly').checked;
  let feedback=count?`Showing ${count.toLocaleString()} of ${total.toLocaleString()} routines`:'';
  if(!count&&total){
-   if(!$('dayAll').checked&&chosen.length)feedback=`No routine is possible with ${selectedDays} of classes per week.`;
+   if(!completed)feedback='No matching routine found yet. Generation is still running.';
+   else if(!$('dayAll').checked&&chosen.length)feedback=`No routine is possible with ${selectedDays} of classes per week.`;
    else if(preferred)feedback='No routines match your preferred faculty. Turn off the preferred faculty filter to see all valid routines.';
    else feedback='No routines match these filters.';
  }
