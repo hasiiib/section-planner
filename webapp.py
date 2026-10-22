@@ -24,6 +24,26 @@ def index():
 @app.get('/api/health')
 def health():return {'status':'ok'}
 
+@app.get('/api/offerings')
+def preloaded_offerings():
+    """Return the bundled, administrator-provided course offerings."""
+    path = BASE / 'offering_data.json'
+    if not path.is_file():
+        raise HTTPException(503, 'Course offerings are not installed on this server.')
+    try:
+        data = json.loads(path.read_text(encoding='utf-8'))
+        sections = data.get('sections', [])
+        if not isinstance(sections, list) or not sections:
+            raise ValueError('No course sections')
+        return {
+            'sections': sections,
+            'warnings': data.get('warnings', []),
+            'trimester': data.get('trimester', 'Fall 2026'),
+            'pages': data.get('pages', 0)
+        }
+    except (ValueError, TypeError, OSError) as exc:
+        raise HTTPException(503, 'The preloaded course offerings could not be read.') from exc
+
 @app.post('/api/import')
 async def upload(file:UploadFile=File(...)):
     name=Path(file.filename or 'upload').name
