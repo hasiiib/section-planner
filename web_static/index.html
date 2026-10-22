@@ -3,7 +3,26 @@
 <main>
 <section id="welcome" class="view welcome"><div class="hero-label">YOUR SCHEDULE, SIMPLIFIED</div><h1>Section Planner</h1><p>Find the right sections. Build your ideal routine.</p><button id="start" class="start-btn">START <span>↗</span></button><div class="credit">Made by Ayon</div></section>
 <section id="courses" class="view" hidden><div class="section-top"><span class="eyebrow">STEP 01 / 02</span><span id="termBadge" class="pill"></span></div><h2>Choose your courses</h2><p class="muted">Select courses from any available program. Each selected course keeps all its sections.</p><div class="toolbar"><input id="search" class="search" placeholder="Search by course code or title..."><select id="programFilter" aria-label="Filter by program"><option value="All">All programs</option></select></div><div class="course-layout"><div class="panel"><div class="panel-title">Available courses <span id="availableCount" class="muted"></span></div><div id="courseList" class="course-list"></div></div><div class="panel"><div class="panel-title">Selected courses <span id="selectedCount" class="muted"></span></div><div id="selectedList" class="selected-list"></div></div></div><div id="generatePanel" class="generation" hidden><div class="spinner"></div><span id="generateText">Generating routines...</span><div class="track"><div id="generateFill"></div></div><button id="cancel" class="secondary">Cancel</button></div><div class="nav"><button id="courseBack" class="secondary">← Back</button><button id="generate" class="primary">Generate Routines →</button></div></section>
-<section id="results" class="view" hidden><div class="section-top"><span class="eyebrow">STEP 02 / 02</span><div class="actions"><button id="compare" class="secondary small">⇄ Compare</button><button id="newSelection" class="secondary small">← Courses</button></div></div><h2>Class Routines <span id="resultCount" class="count"></span></h2><p id="resultStatus" class="muted"></p><div id="routines" class="routines"></div><div id="moreZone"><button id="more" class="secondary" hidden>Show more routines ↓</button></div></section>
+<section id="results" class="view" hidden><div class="section-top"><span class="eyebrow">STEP 02 / 02</span><div class="actions"><button id="compare" class="secondary small">⇄ Compare</button><button id="newSelection" class="secondary small">← Courses</button></div></div><h2>Class Routines <span id="resultCount" class="count"></span></h2><p id="resultStatus" class="muted"></p>
+<div class="routine-filters" aria-label="Routine filters">
+  <div class="filter-heading"><strong>Filter routines</strong><span class="muted">Choose multiple class-day options</span></div>
+  <div class="day-filter" id="dayFilters" role="group" aria-label="Class days per week">
+    <label class="filter-pill"><input type="checkbox" id="dayAll" checked> All days</label>
+    <label class="filter-pill"><input type="checkbox" class="dayChoice" value="1"> 1 day</label>
+    <label class="filter-pill"><input type="checkbox" class="dayChoice" value="2"> 2 days</label>
+    <label class="filter-pill"><input type="checkbox" class="dayChoice" value="3"> 3 days</label>
+    <label class="filter-pill"><input type="checkbox" class="dayChoice" value="4"> 4 days</label>
+    <label class="filter-pill"><input type="checkbox" class="dayChoice" value="5"> 5 days</label>
+    <label class="filter-pill"><input type="checkbox" class="dayChoice" value="6"> 6 days</label>
+    <label class="filter-pill"><input type="checkbox" class="dayChoice" value="7"> 7 days</label>
+  </div>
+  <div class="filter-bottom">
+    <label class="filter-pill"><input id="preferredOnly" type="checkbox"> Preferred faculty only</label>
+    <label class="sort-label" for="timeSort">Sort by <select id="timeSort"><option value="default">Default</option><option value="morning">Morning classes first</option><option value="noon">Noon classes first</option></select></label>
+  </div>
+  <p id="filterFeedback" class="filter-feedback" aria-live="polite"></p>
+</div>
+<div id="routines" class="routines"></div><div id="moreZone"><button id="more" class="secondary" hidden>Show more routines ↓</button></div></section>
 </main></div>
 <div id="modal" class="modal" hidden><div class="dialog"><div class="dialog-top"><h3 id="modalTitle"></h3><button id="modalClose" class="close">✕</button></div><div id="modalContent" class="modal-content"></div></div></div>
 <script src="/static/app.js"></script></body></html>
