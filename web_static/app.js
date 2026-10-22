@@ -86,8 +86,8 @@ function renderResults(){
  let feedback=count?`Showing ${count.toLocaleString()} of ${total.toLocaleString()} routines`:'';
  if(!count&&total){
    if(!completed)feedback='No matching routine found yet. Generation is still running.';
+   else if(preferred&&facultyPrefs.size)feedback='No routine matches all selected preferred faculty'+(!$('dayAll').checked&&chosen.length?' and the selected class-day filters':'')+'. Turn off Preferred Faculty Only or change the day filters to see other routines.';
    else if(!$('dayAll').checked&&chosen.length)feedback=`No routine is possible with ${selectedDays} of classes per week.`;
-   else if(preferred)feedback='No routine uses only your selected faculty for the courses where preferences were set. Turn off Preferred Faculty Only to see the other valid routines.';
    else feedback='No routines match these filters.';
  }
  if(preferred&&!facultyPrefs.size)feedback='Select a preferred faculty on the Courses page to use this filter.';
