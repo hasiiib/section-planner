@@ -50,8 +50,19 @@ function getVisibleRoutines(){
  const preferred=$('preferredOnly').checked;
  const mode=$('timeSort').value;
  const rows=routines.map((routine,index)=>({routine,index}));
- const visible=rows.filter(item=>(all||chosen.includes(classDayCount(item.routine)))&&(!preferred||scoreRoutine(item.routine)>0));
- // Preferences affect ordering only; never invalidate an otherwise valid routine.
+ const visible=rows.filter(item=>{
+  const dayCount=classDayCount(item.routine);
+  if(dayCount>5||!(all||chosen.includes(dayCount)))return false;
+  if(!preferred)return true;
+  // Every course with an explicit faculty preference must use one of its selected teachers.
+  // Courses without preferences remain unrestricted.
+  if(!facultyPrefs.size)return false;
+  return item.routine.every(section=>{
+    const allowed=facultyPrefs.get(identity(section));
+    return !allowed||!allowed.size||allowed.has(section.faculty);
+  });
+ });
+ // Sort the matching results; the preferred-only toggle intentionally filters.
  visible.sort((a,b)=>scoreRoutine(b.routine)-scoreRoutine(a.routine)||timePreferenceScore(b.routine,mode)-timePreferenceScore(a.routine,mode)||a.index-b.index);
  return visible;
 }
@@ -76,7 +87,7 @@ function renderResults(){
  if(!count&&total){
    if(!completed)feedback='No matching routine found yet. Generation is still running.';
    else if(!$('dayAll').checked&&chosen.length)feedback=`No routine is possible with ${selectedDays} of classes per week.`;
-   else if(preferred)feedback='No routines match your preferred faculty. Turn off the preferred faculty filter to see all valid routines.';
+   else if(preferred)feedback='No routine uses only your selected faculty for the courses where preferences were set. Turn off Preferred Faculty Only to see the other valid routines.';
    else feedback='No routines match these filters.';
  }
  if(preferred&&!facultyPrefs.size)feedback='Select a preferred faculty on the Courses page to use this filter.';
