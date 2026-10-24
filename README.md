@@ -1,51 +1,83 @@
-# Class Routine | UIU Smart Course Routine Generator
+# Section Planner
 
-Native **PySide6** Linux Mint desktop application with local storage. The original UIU Fall 2026 offering PDF is bundled.
+**A smarter way to plan classes at United International University (UIU).**
 
-## Launch (Linux Mint)
+Section Planner helps UIU students explore course offerings and build conflict-free class routines without manually comparing dozens of sections.
 
-Extract the ZIP, open a terminal in the extracted `UIU_Smart_Course_Routine_Generator` folder, and run:
+**Live website:** https://section-planner.onrender.com/
+
+> **Current coverage:** UIU Fall 2026 course offerings from the provided BSCSE / BSDS dataset. The catalog is preloaded: visitors do **not** need to upload a PDF. This is an independent student project, not an official UIU service. Course sections, faculty assignments and times may change; confirm details through official UIU channels before registration.
+
+## Features
+
+- **Preloaded UIU courses** — search by course code or title, filter by program, and pick courses.
+- **Conflict-free routine generation** — one section per selected course; overlapping class times are rejected.
+- **Optional faculty preferences** — prioritize routines matching chosen instructors. When all preferences cannot be met, show the highest achievable matches and describe identifiable overlaps.
+- **Preferred Faculty Only** — show routines with the maximum available faculty matches when an exact match is impossible.
+- **Class-day filters** — show routines with 1–5 class days per week; select multiple day counts.
+- **Morning / Noon sorting** — rank schedules toward the chosen time of day; it does **not** require every class to fall in that period.
+- **Compare and export** — compare routine tables and export PDF, PNG, XLSX or CSV, including course credits.
+- **Conditional sections** — “If Required” sections are used only when regular sections cannot form a complete valid routine; availability must be confirmed by UIU.
+
+The scheduler enumerates valid section combinations rather than imposing an arbitrary five-routine limit. Very large searches can take time; progress/cancellation and browser/server resource limits still apply.
+
+## How to use
+
+1. Open **https://section-planner.onrender.com/** and press **START**.
+2. Search for courses, optionally filter by program, and add your courses.
+3. If you want, select preferred faculty for individual courses.
+4. Select **Generate Routines**.
+5. Filter the results by class days or faculty matches, sort by Morning / Noon, compare routines and export your favorite option.
+
+Faculty and time preferences affect ranking and filtering; they **never** make an overlapping class combination valid. Some preferred faculty combinations may be impossible.
+
+## Technology
+
+- **Frontend:** HTML, CSS and JavaScript (`web_static/`)
+- **Backend:** Python, FastAPI (`webapp.py`)
+- **Scheduling:** Python (`uiu/scheduler.py`)
+- **Data:** bundled, preprocessed UIU Fall 2026 offerings (`offering_data.json`)
+- **Hosting:** Render (`render.yaml`)
+
+The source repository can stay private while the Render-hosted website is public.
+
+## Run the website locally
+
+Requires Python 3:
 
 ```bash
-./run.sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r web-requirements.txt
+.venv/bin/python -m uvicorn webapp:app --host 127.0.0.1 --port 8000
 ```
 
-The launcher creates `.venv`, installs Python dependencies **only inside that folder**, then starts the app. Internet is needed for first setup. No password, `sudo`, global pip, or browser server is involved. Alternative launch after setup:
+Open **http://127.0.0.1:8000**. Stop the server with Ctrl+C. The web app does not require PySide6 or a Linux desktop environment.
 
-```bash
-.venv/bin/python main.py
-```
+## Deploy and update the catalog
 
-If the launcher is not executable, use `bash run.sh`.
+Render reads `render.yaml` from the repository root. Connect the private GitHub repository via **New → Blueprint**, then deploy. See [WEB_DEPLOY.md](WEB_DEPLOY.md) for setup and troubleshooting.
 
-## Usage
+To add offerings for another program or trimester, prepare and validate new source data first; merge on **program + course code + section within the appropriate trimester**. Do not blindly replace the current CSE/DS offerings or guess clipped titles. The present website serves one preloaded catalog; multi-trimester administration and self-service publishing are not implemented.
 
-1. **START** on the minimal welcome screen.
-2. **Open File** accepts PDF, DOC/DOCX, XLS/XLSX or CSV course-offering files. A valid file must contain actual course-section records and weekday/time data. Invalid and unsupported files trigger a popup and do not advance. PDFs use UIU's position-aware extraction; structured files need column headers `Program, Course Code, Title, Section, Day1, Time1`, with optional Day2/Time2, rooms, faculty and credit. An old `.doc` needs locally installed LibreOffice for conversion; `.docx` imports directly. Click the warning icon to review parser warnings. Import automatically advances to course selection when valid.
-3. **Select Courses**: filter `All` or any program actually found in the imported dataset. Search code/title; add distinct courses from multiple programs. Selected entries retain program, title and sections. Click **Generate Routines**. While processing, progress and Cancel appear; quick completions advance directly.
-4. **Class Routines**: every valid assignment is available with one section per selected course. Routine cards load progressively on one scrollable page and are placed side by side when wide windows allow. Day column cells are vertically merged and centered. Hold **Ctrl + mouse wheel** to scale routine tables. Export any card via **Save / Export** (PDF, PNG, XLSX, CSV). Select multiple routine numbers with **Compare** to see them together.
+## Project files
 
-Exports use the title **Class Routine** and matching Day / Class Period / Course Code / Course Title / Section / Faculty / Room columns. Excel and PDF provide merged days; CSV represents merges with a blank day on continuation rows. The PNG renderer visually centers day labels across their rows.
+| Path | Purpose |
+| --- | --- |
+| `webapp.py` | Website and API |
+| `web_static/` | Website interface |
+| `offering_data.json` | Bundled course-section dataset |
+| `uiu/` | Course models, scheduler, parsing and exports |
+| `render.yaml` | Render deployment configuration |
+| `web-requirements.txt` | Website dependencies |
+| `tests/` | Automated tests |
+| `main.py`, `run.sh`, `run-web.sh`, `requirements.txt` | Legacy/optional local launch tools; not required for Render hosting |
 
-## Data and limitations
+## Limitations and feedback
 
-- Dataset and saved-routine records stay locally in `~/.local/share/uiu-smart-routines/routine.sqlite3`, or under `XDG_DATA_HOME` if configured.
-- Importing a new dataset may replace an existing dataset **with the same name**. Existing saved routine records are retained.
-- Missing faculty initials do not block import. `TBA` faculty values remain `TBA`. A class with only one full day/time pair is legitimate. A partially missing or malformed time slot is noted and never fabricated.
-- When no trimester heading exists (non-PDF sources), the file name is used as the dataset name rather than inventing a trimester.
-- The bundled 54-page PDF is a fixed-layout PDF; some original titles/faculty fields may physically overlap column edges. Import warnings can identify uncertain source fields. This importer follows the supplied document and does not infer missing values.
-- Exhaustive enumeration can generate a **very large** number of assignments; the data is retained in memory until the session ends. Cancelling keeps partial results separate from completed runs and never labels them complete.
-- Routine cards render incrementally to avoid showing thousands of table widgets at once. All routine choices remain accessible via **Show More Routines** or scrolling.
-- Native PySide6 uses your Linux Mint system's graphical libraries. If you have a Qt/XCB system library error, install the missing package using Software Manager rather than running privileged scripts.
+This is currently designed for **United International University** and uses the uploaded Fall 2026 offering data. It does not enroll students or verify seat availability. Routine results remain in the current browser session; there is no student account or cloud-saved routine library. A free Render instance may take time to wake after inactivity.
 
-## Tests
+Found a bug or have a feature suggestion? Feedback is welcome. The goal is to make section selection less stressful for UIU students.
 
-```bash
-.venv/bin/python -m pytest -q
-```
+---
 
-The tests cover time overlap, exact-one-section scheduling, source PDF extraction, multiple meeting periods, generation completion, cancellation, dataset persistence, file type validation, CSV/Excel/Word imports and all four exports.
-
-## Source files
-
-`main.py` guards virtual-environment startup; `run.sh` bootstraps dependencies; `uiu/importers.py` reads the six formats; `uiu/parser.py` extracts PDF; `uiu/model.py` stores data objects; `uiu/scheduler.py` enumerates; `uiu/storage.py` persists datasets/routines; `uiu/gui.py` implements the desktop screens; `uiu/exports.py` renders exports; and `tests/` holds checks.
+**Made by Ayon**
