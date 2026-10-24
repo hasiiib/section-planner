@@ -1,44 +1,65 @@
-# Section Planner: browser deployment
+# Section Planner — Deployment and maintenance
 
-This repository contains **two editions**:
+**Production site:** https://section-planner.onrender.com/
 
-- `main.py` + `./run.sh`: original PySide6 Linux desktop application.
-- `webapp.py` + `web_static/`: browser edition. The browser sends course-offering files and selected sections to a server. Python extraction, scheduling and exports run on the server, not in browser JavaScript.
+The active deployment is a **Python FastAPI website** serving a browser UI. It is currently configured for United International University (UIU) and preloads the Fall 2026 BSCSE/BSDS offering catalog. **Visitors do not upload course PDFs.**
 
-The web edition keeps no uploaded files beyond temporary request processing. It does not currently provide accounts or persistent saved routines. Browser results exist only in the current page session. **Avoid uploading confidential course files to a public third-party server.**
+## Hosting on Render
 
-## Recommended: deploy on Render from a PRIVATE GitHub repository
+1. Keep this GitHub repository private if you don't want the server-side Python code publicly browsable.
+2. In [Render](https://dashboard.render.com/), connect the repository and choose **New → Blueprint**.
+3. Use the root `render.yaml` configuration. It specifies:
+   - Python web service named `section-planner`
+   - `pip install -r web-requirements.txt`
+   - `uvicorn webapp:app --host 0.0.0.0 --port $PORT`
+   - health endpoint `/api/health`
+4. Deploy the latest `main` commit. Open the service URL when its state is **Live**.
+5. Confirm that START loads courses and that generation, filtering, comparison and exports work.
 
-1. Create a **private** repository on https://github.com/new (choose **Private**). Do not upload your `.venv` directory or database files. Upload the **contents of this project folder**, including `render.yaml`, `webapp.py`, `web_static`, `uiu`, `web-requirements.txt`.
-2. Open https://dashboard.render.com/ and connect GitHub.
-3. Choose **New → Blueprint** and select the private repository. Render will read `render.yaml`. If the Blueprint option is unavailable, create **New → Web Service**, select the repo, set **Python** runtime, build command `pip install -r web-requirements.txt`, start command `uvicorn webapp:app --host 0.0.0.0 --port $PORT` and health check `/api/health`.
-4. Deploy. After Render reports *Live*, open the generated `https://...onrender.com` URL.
-5. Share that URL, **not** the GitHub repository URL. The repo can remain private while the deployed site is public.
+If a commit doesn't trigger auto-deployment, choose **Manual Deploy → Deploy latest commit** in the web service. Render free-plan limits, cold starts, build failures and server resource exhaustion can affect availability.
 
-Render free services may sleep after 15 minutes, take time to wake, and have usage limits. They are for experimentation, not production reliability. Source code on the server is not publicly downloaded by ordinary website visitors, but no public deployment can promise absolute protection of the frontend, API or security vulnerabilities. Use a paid service with monitoring and rate limiting for wider public use.
+## What gets deployed
 
-### Local website testing (Linux Mint)
+Render uses `webapp.py`, `web_static/`, `offering_data.json`, `uiu/`, and `web-requirements.txt`.
+
+The repository retains an older optional PySide6 desktop edition (`main.py`, `run.sh`, `requirements.txt`). **It is not part of the Render launch path.** Do not delete shared `uiu/` modules, since the website depends on them.
+
+## Managing course offerings
+
+`offering_data.json` contains the preprocessed source course sections. When new UIU offerings arrive:
+
+1. Obtain the official offering sheet.
+2. Parse and review course codes, sections, faculty, credits, each meeting day and each time range; manually check ambiguous clipped fields against the original.
+3. Keep the existing catalog as a backup before merging.
+4. Merge unique offerings carefully using **trimester + program + course code + section**. Preserve valid existing entries unless replacing an updated entry for the same identifier.
+5. Verify that the intended programs and courses show up, including faculty preference options, then commit the updated dataset and redeploy.
+
+The website currently has **one active bundled dataset** rather than an admin login or multi-term database. The self-service admin offering manager has *not* been implemented. Avoid uploading user-submitted files to the public server without building proper access control and durable storage.
+
+## Local smoke test
+
+With Python 3:
 
 ```bash
-cd UIU_Smart_Course_Routine_Generator
 python3 -m venv .venv
 .venv/bin/python -m pip install -r web-requirements.txt
-.venv/bin/python -m uvicorn webapp:app --reload --host 127.0.0.1 --port 8000
+.venv/bin/python -m uvicorn webapp:app --host 127.0.0.1 --port 8000
 ```
 
-Open http://127.0.0.1:8000 in a browser. Stop with Ctrl+C. The `.doc` importer needs system LibreOffice; use `.docx` instead if it is unavailable. Other formats run with Python dependencies.
+Visit `http://127.0.0.1:8000/api/health` (should return a JSON OK status), then open `http://127.0.0.1:8000/`.
 
-### Why not deploy the PySide6 window to Vercel?
+### Suggested checks after each update
 
-Vercel serves websites and server-side functions, not interactive Qt desktop windows. A web version is necessary. This package includes the web edition. Vercel can run FastAPI, but per-request duration and resource limits are significant for exhaustive schedule enumeration. **Render is recommended first** because the service supports an always-running Python process while active. No arbitrary maximum of five routines is imposed; exceptionally large combinations can still exhaust a visitor's browser memory, data transfer or a hosting limit. Generation streams results as they are found, and Cancel aborts the browser request.
+- START displays preloaded BSCSE/BSDS courses without requiring a file.
+- Multiple selected courses retain their available sections and optional preferred faculty names.
+- All displayed routines are conflict-free; back-to-back classes are allowed.
+- Preferred-only falls back to maximum match when no exact match exists and its popup can be closed.
+- Results offer 1–5 class-day filters and morning/noon sorting.
+- PDF, PNG, XLSX and CSV outputs include course credits.
+- Directly compare the offering details with official UIU records before section selection.
 
-## Verify before sharing
+## Privacy and limitations
 
-- Import your Fall 2026 PDF and verify total records, program filter and warning details.
-- Check a regular-only assignment and an impossible regular assignment to confirm If Required fallback.
-- Generate and compare multiple routines, export PDF / PNG / XLSX / CSV.
-- Verify on desktop and mobile browsers. The original PySide6 GUI is still available separately.
+This is an independent student-made planner, not an official UIU registration service. A private GitHub repository protects server source from casual browsing, but shipped browser JavaScript and HTML are inherently accessible to visitors. It does not support student logins, saved cloud routines or seat-availability verification. No deployed code can guarantee perfect matching of faculty assignments that may change after publication.
 
-## Notes about source data
-
-The original Fall 2026 PDF contains some course titles clipped at the source table's column boundary. The importer restores a longer title only when another record for the **same program and course** contains that text. Otherwise it retains a readable warning. It never guesses the missing remainder of a course title. Faculty initials are optional. Sections explicitly marked **If Required** are considered only when regular sections cannot produce any complete valid routine. TBA instructors remain TBA.
+**Maintainer:** Ayon.
