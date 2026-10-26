@@ -8,6 +8,7 @@ This folder contains the **static, browser-only edition** of Section Planner for
 - The Fall 2026 offering dataset is in `offerings.json`.
 - Exhaustive scheduling runs in `scheduler-worker.js` in the visitor's browser.
 - Faculty preferences, days filters, comparison and CSV/PDF/PNG/XLSX exports are included.
+- Weekly routines use a day-by-time timetable: class blocks line up against time columns. View/compare/PNG/PDF share this layout; XLSX/CSV use a compatible day-by-time grid.
 - Export libraries load from jsDelivr CDN, so downloading PDF, PNG and Excel requires access to those external scripts. CSV does not.
 - This folder is isolated from the existing FastAPI website, which is left intact.
 
