@@ -63,3 +63,8 @@
 .week-faculty{font-size:12px;font-weight:650;line-height:1.17;overflow-wrap:anywhere}
 .week-title{font-size:14px;line-height:1.17;font-weight:800}
 .week-period{font-size:11px;line-height:1.15;margin-top:auto}
+
+/* Stagger unusual adjacent starts (e.g. 1:51 and 2:00) rather than overlap their labels. */
+.week-scale{height:62px}
+.week-scale .week-scale-close{top:37px;font-size:10px;color:#9a4d1c}
+.week-lane{height:160px}
