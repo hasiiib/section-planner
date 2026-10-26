@@ -65,7 +65,7 @@ function scoreRoutine(routine){return routine.reduce((count,s)=>count+((facultyP
 function entries(routine){const a=[];for(const s of routine)for(const m of s.meetings)a.push({day:m.day,start:m.start,end:m.end,room:m.room,code:s.code,title:s.title,section:s.section,faculty:s.faculty,credit:s.credit,conditional:conditional(s)});return a.sort((a,b)=>days.indexOf(a.day)-days.indexOf(b.day)||a.start-b.start)}
 function weeklyGrid(routine){
  const records=entries(routine),activeDays=['Sat','Sun','Mon','Tue','Wed','Thu',...(records.some(x=>x.day==='Fri')?['Fri']:[])];
- const start=Math.min(480,...records.map(x=>x.start)),end=Math.max(1080,...records.map(x=>x.end));
+ const start=Math.min(510,...records.map(x=>x.start)),end=Math.max(990,...records.map(x=>x.end));
  const grid=document.createElement('div');grid.className='weekly-grid';
  const heading=document.createElement('div');heading.className='weekly-heading';
  const totalCredit=routine.reduce((n,s)=>n+(Number(s.credit)||0),0);
@@ -73,9 +73,10 @@ function weeklyGrid(routine){
  const board=document.createElement('div');board.className='week-board';
  const axis=document.createElement('div');axis.className='week-axis';
  const corner=document.createElement('div');corner.className='week-corner';corner.textContent='DAY / TIME';axis.append(corner);
- const slots=[];for(let t=Math.floor(start/30)*30;t<end;t+=30)slots.push(t);
  const scale=document.createElement('div');scale.className='week-scale';
- for(let t=Math.ceil(start/60)*60;t<end;t+=60){const label=document.createElement('span');label.style.left=(t-start)/(end-start)*100+'%';label.textContent=time(t);scale.append(label)}axis.append(scale);board.append(axis);
+ const classStarts=[...new Set(records.map(m=>m.start))].sort((a,b)=>a-b);
+ const boundaries=[...new Set([start,...classStarts,end])].sort((a,b)=>a-b);
+ for(const t of boundaries){const label=document.createElement('span');label.style.left=(t-start)/(end-start)*100+'%';label.textContent=time(t);if(t===start)label.classList.add('week-scale-first');if(t===end)label.classList.add('week-scale-last');scale.append(label)}axis.append(scale);board.append(axis);
  for(const day of activeDays){
   const row=document.createElement('div');row.className='week-row';
   const label=document.createElement('div');label.className='week-day';label.textContent=({Sat:'Saturday',Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday'})[day];row.append(label);
@@ -83,13 +84,13 @@ function weeklyGrid(routine){
   const meetings=records.filter(e=>e.day===day);
   if(!meetings.length)row.classList.add('week-row-empty');
   if(!meetings.length){const empty=document.createElement('span');empty.className='week-empty';empty.textContent='No classes';lane.append(empty)}
-  for(let t=Math.ceil(start/60)*60;t<end;t+=60){const line=document.createElement('span');line.className='week-line';line.style.left=(t-start)/(end-start)*100+'%';lane.append(line)}
+  for(const t of boundaries.slice(1,-1)){const line=document.createElement('span');line.className='week-line';line.style.left=(t-start)/(end-start)*100+'%';lane.append(line)}
   meetings.forEach((m,i)=>{
    const block=document.createElement('div');block.className='week-class week-shade-'+(routine.findIndex(s=>s.code===m.code&&s.section===m.section)%6);
    block.style.left=((m.start-start)/(end-start)*100)+'%';
    block.style.width=((m.end-m.start)/(end-start)*100)+'%';
    block.title=[m.code+' · '+m.section,m.title,m.faculty,m.room,time(m.start)+' – '+time(m.end)].join(' | ');
-   for(const [tag,value] of [['small',m.code+' · '+m.section],['strong',m.title],['small',m.room||'Room not listed'],['small',m.faculty||'TBA'],['b',time(m.start)+' – '+time(m.end)]]){const el=document.createElement(tag);el.textContent=value;block.append(el)}
+   for(const [className,tag,value] of [['week-course','div',m.code],['week-section','div','Section '+m.section],['week-title','strong',m.title],['week-room','div',m.room?'Room '+m.room:'Room not listed'],['week-faculty','div',m.faculty||'TBA'],['week-period','b',time(m.start)+' – '+time(m.end)]]){const el=document.createElement(tag);el.className=className;el.textContent=value;block.append(el)}
    lane.append(block);
   });row.append(lane);board.append(row);
  }
