@@ -81,6 +81,7 @@ function weeklyGrid(routine){
   const label=document.createElement('div');label.className='week-day';label.textContent=({Sat:'Saturday',Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday'})[day];row.append(label);
   const lane=document.createElement('div');lane.className='week-lane';
   const meetings=records.filter(e=>e.day===day);
+  if(!meetings.length)row.classList.add('week-row-empty');
   if(!meetings.length){const empty=document.createElement('span');empty.className='week-empty';empty.textContent='No classes';lane.append(empty)}
   for(let t=Math.ceil(start/60)*60;t<end;t+=60){const line=document.createElement('span');line.className='week-line';line.style.left=(t-start)/(end-start)*100+'%';lane.append(line)}
   meetings.forEach((m,i)=>{
@@ -232,14 +233,43 @@ async function renderExportCanvas(routine){
 }
 function exportDialog(routine){
  const div=document.createElement('div'),p=document.createElement('p');p.textContent='Choose the format for this weekly Class Routine.';div.append(p);
- for(const fmt of ['PDF','PNG','XLSX','CSV']){
+ for(const fmt of ['PDF','PNG','XLSX','CSV','JSON','ICS']){
   const b=document.createElement('button');b.className='secondary';b.style.margin='6px';b.textContent=fmt;
   b.onclick=async()=>{
    b.disabled=true;
    try{
     exportRows(routine); // Recheck all meetings for overlaps before exporting.
     const matrix=gridExportRows(routine);
-    if(fmt==='CSV'){
+    if(fmt==='JSON'){
+     const data={schema:'uiu-section-planner/routine-v1',university:'United International University',trimester:$('termBadge').textContent||null,timezone:'Asia/Dhaka',courses:routine.map(s=>({program:s.program,code:s.code,title:s.title,section:s.section,faculty:s.faculty,faculty_initial:s.initial,credit:s.credit,meetings:(s.meetings||[]).map(m=>({day:m.day,start_minutes:m.start,end_minutes:m.end,start_time:time(m.start),end_time:time(m.end),room:m.room||null}))}))};
+     saveBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}),'Class_Routine.json');
+    }else if(fmt==='ICS'){
+     const first=prompt('Enter the first date of classes (YYYY-MM-DD).');
+     if(first===null)return;
+     const last=prompt('Enter the last date of classes (YYYY-MM-DD).');
+     if(last===null)return;
+     const validDate=d=>/^\\d{4}-\\d{2}-\\d{2}$/.test(d)&&!Number.isNaN(Date.parse(d+'T00:00:00Z'))&&new Date(d+'T00:00:00Z').toISOString().slice(0,10)===d;
+     if(!validDate(first)||!validDate(last)||last<first)throw Error('Please enter valid start and end dates in YYYY-MM-DD format.');
+     const dayIndex={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};
+     const origin=new Date(first+'T00:00:00Z'),until=last.replace(/-/g,'')+'T175959Z';
+     const pad=n=>String(n).padStart(2,'0');
+     const stamp=(date,minutes)=>date.toISOString().slice(0,10).replace(/-/g,'')+'T'+pad(Math.floor(minutes/60))+pad(minutes%60)+'00';
+     const safe=v=>String(v??'').replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');
+     const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Section Planner//UIU Weekly Routine//EN','CALSCALE:GREGORIAN','X-WR-TIMEZONE:Asia/Dhaka'];
+     let count=0;
+     for(const section of routine)for(const meeting of section.meetings||[]){
+      const offset=(dayIndex[meeting.day]-origin.getUTCDay()+7)%7;
+      const date=new Date(origin.getTime()+offset*86400000);
+      if(date.toISOString().slice(0,10)>last)continue;
+      const title=section.code+' ('+section.section+') - '+section.title;
+      lines.push('BEGIN:VEVENT','UID:uiu-'+Date.now()+'-'+count+++'@section-planner','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').replace(/\\.\\d{3}Z$/,'Z'),
+       'SUMMARY:'+safe(title),'DTSTART;TZID=Asia/Dhaka:'+stamp(date,meeting.start),
+       'DTEND;TZID=Asia/Dhaka:'+stamp(date,meeting.end),'RRULE:FREQ=WEEKLY;UNTIL='+until,
+       'LOCATION:'+safe(meeting.room||''),'DESCRIPTION:'+safe('Faculty: '+(section.faculty||'TBA')+' | Credit: '+(section.credit||'Not listed')),'END:VEVENT');
+     }
+     lines.push('END:VCALENDAR');
+     saveBlob(new Blob([lines.join('\\r\\n')+'\\r\\n'],{type:'text/calendar;charset=utf-8'}),'Class_Routine.ics');
+    }else if(fmt==='CSV'){
      const data=[['Class Routine'],['Day / Time',...matrix.headings],...matrix.cells];
      const csv=data.map(line=>line.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
      saveBlob(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}),'Class_Routine.csv');
