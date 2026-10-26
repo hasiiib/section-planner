@@ -1,4 +1,6 @@
-# Free Cloudflare Pages deployment
+# Cloudflare Pages — Section Planner
+
+**Live website:** https://section-planner.pages.dev/
 
 This folder contains the **static, browser-only edition** of Section Planner for United International University.
 
@@ -16,7 +18,7 @@ This folder contains the **static, browser-only edition** of Section Planner for
 3. Choose production branch **main**.
 4. Select **no framework** and leave **Build command** empty.
 5. Set **Build output directory** to `cloudflare` and leave root directory at the repo root.
-6. Click **Save and Deploy**. Cloudflare will give a `*.pages.dev` URL; visit it to test.
+6. Click **Save and Deploy**. The project is live at **https://section-planner.pages.dev/**. Visit it to test.
 
 Cloudflare can redeploy automatically after pushes to `main`. No credit card or Python hosting server is involved in this static edition.
 
