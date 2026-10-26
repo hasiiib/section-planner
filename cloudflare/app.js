@@ -64,7 +64,7 @@ $('generate').onclick=()=>{
 function scoreRoutine(routine){return routine.reduce((count,s)=>count+((facultyPrefs.get(identity(s))||new Set()).has(s.faculty)?1:0),0)}
 function entries(routine){const a=[];for(const s of routine)for(const m of s.meetings)a.push({day:m.day,start:m.start,end:m.end,room:m.room,code:s.code,title:s.title,section:s.section,faculty:s.faculty,credit:s.credit,conditional:conditional(s)});return a.sort((a,b)=>days.indexOf(a.day)-days.indexOf(b.day)||a.start-b.start)}
 function weeklyGrid(routine){
- const records=entries(routine),activeDays=['Sat','Sun','Mon','Tue','Wed','Thu'];
+ const records=entries(routine),activeDays=['Sat','Sun','Mon','Tue','Wed','Thu',...(records.some(x=>x.day==='Fri')?['Fri']:[])];
  const start=Math.min(480,...records.map(x=>x.start)),end=Math.max(1080,...records.map(x=>x.end));
  const grid=document.createElement('div');grid.className='weekly-grid';
  const heading=document.createElement('div');heading.className='weekly-heading';
@@ -78,7 +78,7 @@ function weeklyGrid(routine){
  for(let t=Math.ceil(start/60)*60;t<end;t+=60){const label=document.createElement('span');label.style.left=(t-start)/(end-start)*100+'%';label.textContent=time(t);scale.append(label)}axis.append(scale);board.append(axis);
  for(const day of activeDays){
   const row=document.createElement('div');row.className='week-row';
-  const label=document.createElement('div');label.className='week-day';label.textContent=({Sat:'Saturday',Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday'})[day];row.append(label);
+  const label=document.createElement('div');label.className='week-day';label.textContent=({Sat:'Saturday',Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday'})[day];row.append(label);
   const lane=document.createElement('div');lane.className='week-lane';
   const meetings=records.filter(e=>e.day===day);
   if(!meetings.length){const empty=document.createElement('span');empty.className='week-empty';empty.textContent='No classes';lane.append(empty)}
@@ -210,7 +210,7 @@ function saveBlob(blob,name){const url=URL.createObjectURL(blob),a=document.crea
 function gridExportRows(routine){
  const records=entries(routine),markers=[...new Set(records.flatMap(x=>[x.start,x.end]))].sort((a,b)=>a-b);
  const headings=markers.slice(0,-1).map((t,i)=>time(t)+'–'+time(markers[i+1]));
- const days=['Sat','Sun','Mon','Tue','Wed','Thu'];
+ const days=['Sat','Sun','Mon','Tue','Wed','Thu',...(records.some(x=>x.day==='Fri')?['Fri']:[])];
  const cells=days.map(day=>{
   const row=Array(markers.length).fill('');
   row[0]=({Sat:'Saturday',Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday'})[day];
