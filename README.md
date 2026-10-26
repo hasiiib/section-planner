@@ -4,7 +4,9 @@
 
 Section Planner helps UIU students explore course offerings and build conflict-free class routines without manually comparing dozens of sections.
 
-**Existing website (Render):** https://section-planner.onrender.com/\n\n**Free static Cloudflare Pages edition:** see [Cloudflare deployment guide](cloudflare/README.md). Deploy it to obtain your own `*.pages.dev` URL.
+**Live website (Cloudflare Pages):** https://section-planner.pages.dev/
+
+**Deployment instructions:** [Cloudflare Pages guide](cloudflare/README.md). The older FastAPI/Render edition is retained separately.
 
 > **Current coverage:** UIU Fall 2026 course offerings from the provided BSCSE / BSDS dataset. The catalog is preloaded: visitors do **not** need to upload a PDF. This is an independent student project, not an official UIU service. Course sections, faculty assignments and times may change; confirm details through official UIU channels before registration.
 
@@ -23,7 +25,7 @@ The scheduler enumerates valid section combinations rather than imposing an arbi
 
 ## How to use
 
-1. Open **https://section-planner.onrender.com/** and press **START**.
+1. Open **https://section-planner.pages.dev/** and press **START**.
 2. Search for courses, optionally filter by program, and add your courses.
 3. If you want, select preferred faculty for individual courses.
 4. Select **Generate Routines**.
@@ -37,7 +39,7 @@ Faculty and time preferences affect ranking and filtering; they **never** make a
 - **Backend:** Python, FastAPI (`webapp.py`)
 - **Scheduling:** Python (`uiu/scheduler.py`)
 - **Data:** bundled, preprocessed UIU Fall 2026 offerings (`offering_data.json`)
-- **Hosting:** Render (`render.yaml`)
+- **Hosting:** Cloudflare Pages (`cloudflare/`); optional legacy Render (`render.yaml`)
 
 The source repository can stay private while the Render-hosted website is public.
 
@@ -55,7 +57,7 @@ Open **http://127.0.0.1:8000**. Stop the server with Ctrl+C. The web app does no
 
 ## Deploy and update the catalog
 
-Render reads `render.yaml` from the repository root. Connect the private GitHub repository via **New → Blueprint**, then deploy. See [WEB_DEPLOY.md](WEB_DEPLOY.md) for setup and troubleshooting.
+Production uses Cloudflare Pages, with the build output directory set to `cloudflare`. See [cloudflare/README.md](cloudflare/README.md) for deployment. The older FastAPI/Render option is documented in [WEB_DEPLOY.md](WEB_DEPLOY.md).
 
 To add offerings for another program or trimester, prepare and validate new source data first; merge on **program + course code + section within the appropriate trimester**. Do not blindly replace the current CSE/DS offerings or guess clipped titles. The present website serves one preloaded catalog; multi-trimester administration and self-service publishing are not implemented.
 
@@ -74,7 +76,7 @@ To add offerings for another program or trimester, prepare and validate new sour
 
 ## Limitations and feedback
 
-This is currently designed for **United International University** and uses the uploaded Fall 2026 offering data. It does not enroll students or verify seat availability. Routine results remain in the current browser session; there is no student account or cloud-saved routine library. A free Render instance may take time to wake after inactivity.
+This is currently designed for **United International University** and uses the uploaded Fall 2026 offering data. It does not enroll students or verify seat availability. Routine results remain in the current browser session; there is no student account or cloud-saved routine library. The Cloudflare Pages frontend is hosted statically; very large schedule searches can still strain a visitor’s device.
 
 Found a bug or have a feature suggestion? Feedback is welcome. The goal is to make section selection less stressful for UIU students.
 
