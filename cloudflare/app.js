@@ -63,7 +63,39 @@ $('generate').onclick=()=>{
 };
 function scoreRoutine(routine){return routine.reduce((count,s)=>count+((facultyPrefs.get(identity(s))||new Set()).has(s.faculty)?1:0),0)}
 function entries(routine){const a=[];for(const s of routine)for(const m of s.meetings)a.push({day:m.day,start:m.start,end:m.end,room:m.room,code:s.code,title:s.title,section:s.section,faculty:s.faculty,credit:s.credit,conditional:conditional(s)});return a.sort((a,b)=>days.indexOf(a.day)-days.indexOf(b.day)||a.start-b.start)}
-function table(routine){const rows=entries(routine),wrap=document.createElement('div');wrap.className='table-wrap';const table=document.createElement('table');table.innerHTML='<thead><tr>'+['Day','Class Period','Course Code','Course Title','Section','Faculty','Credit','Room'].map(x=>`<th>${x}</th>`).join('')+'</tr></thead>';const body=document.createElement('tbody');for(let i=0;i<rows.length;i++){const e=rows[i],tr=document.createElement('tr');if(i===0||e.day!==rows[i-1].day){let count=1;while(rows[i+count]&&rows[i+count].day===e.day)count++;const day=document.createElement('td');day.className='day';day.rowSpan=count;day.textContent=e.day;tr.append(day)}for(const val of [`${time(e.start)} – ${time(e.end)}`,e.code,e.title,e.section+(e.conditional?' (If Required)':''),e.faculty||'TBA',e.credit===null||e.credit===undefined||e.credit===''?'Not listed':String(e.credit),e.room||'Not listed']){const td=document.createElement('td');td.textContent=val;tr.append(td)}body.append(tr)}table.append(body);wrap.append(table);return wrap}
+function weeklyGrid(routine){
+ const records=entries(routine),activeDays=['Sat','Sun','Mon','Tue','Wed','Thu'];
+ const start=Math.min(480,...records.map(x=>x.start)),end=Math.max(1080,...records.map(x=>x.end));
+ const grid=document.createElement('div');grid.className='weekly-grid';
+ const heading=document.createElement('div');heading.className='weekly-heading';
+ const totalCredit=routine.reduce((n,s)=>n+(Number(s.credit)||0),0);
+ heading.innerHTML='<strong>Class Routine</strong><span>'+routine.length+' courses · '+totalCredit+' credits · '+new Set(records.map(x=>x.day)).size+' class days</span>';grid.append(heading);
+ const board=document.createElement('div');board.className='week-board';
+ const axis=document.createElement('div');axis.className='week-axis';
+ const corner=document.createElement('div');corner.className='week-corner';corner.textContent='DAY / TIME';axis.append(corner);
+ const slots=[];for(let t=Math.floor(start/30)*30;t<end;t+=30)slots.push(t);
+ const scale=document.createElement('div');scale.className='week-scale';
+ for(let t=Math.ceil(start/60)*60;t<end;t+=60){const label=document.createElement('span');label.style.left=(t-start)/(end-start)*100+'%';label.textContent=time(t);scale.append(label)}axis.append(scale);board.append(axis);
+ for(const day of activeDays){
+  const row=document.createElement('div');row.className='week-row';
+  const label=document.createElement('div');label.className='week-day';label.textContent=({Sat:'Saturday',Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday'})[day];row.append(label);
+  const lane=document.createElement('div');lane.className='week-lane';
+  const meetings=records.filter(e=>e.day===day);
+  if(!meetings.length){const empty=document.createElement('span');empty.className='week-empty';empty.textContent='No classes';lane.append(empty)}
+  for(let t=Math.ceil(start/60)*60;t<end;t+=60){const line=document.createElement('span');line.className='week-line';line.style.left=(t-start)/(end-start)*100+'%';lane.append(line)}
+  meetings.forEach((m,i)=>{
+   const block=document.createElement('div');block.className='week-class week-shade-'+(routine.findIndex(s=>s.code===m.code&&s.section===m.section)%6);
+   block.style.left=((m.start-start)/(end-start)*100)+'%';
+   block.style.width=((m.end-m.start)/(end-start)*100)+'%';
+   block.title=[m.code+' · '+m.section,m.title,m.faculty,m.room,time(m.start)+' – '+time(m.end)].join(' | ');
+   for(const [tag,value] of [['small',m.code+' · '+m.section],['strong',m.title],['small',m.room||'Room not listed'],['small',m.faculty||'TBA'],['b',time(m.start)+' – '+time(m.end)]]){const el=document.createElement(tag);el.textContent=value;block.append(el)}
+   lane.append(block);
+  });row.append(lane);board.append(row);
+ }
+ grid.append(board);return grid;
+}
+function table(routine){const wrap=document.createElement('div');wrap.className='table-wrap week-wrap';wrap.append(weeklyGrid(routine));return wrap}
+
 function classDayCount(routine){return new Set(routine.flatMap(s=>(s.meetings||[]).map(m=>m.day))).size}
 function timePreferenceScore(routine,mode){
  if(mode==='default')return 0;
