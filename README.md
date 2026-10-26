@@ -2,84 +2,71 @@
 
 **A smarter way to plan classes at United International University (UIU).**
 
-Section Planner helps UIU students explore course offerings and build conflict-free class routines without manually comparing dozens of sections.
+[**Try Section Planner →**](https://section-planner.pages.dev/)
 
-**Live website (Cloudflare Pages):** https://section-planner.pages.dev/
+Section Planner is a student-built course routine generator for UIU. Choose courses, explore available sections, and find conflict-free weekly timetables without comparing every combination manually.
 
-**Deployment instructions:** [Cloudflare Pages guide](cloudflare/README.md). The older FastAPI/Render edition is retained separately.
-
-> **Current coverage:** UIU Fall 2026 course offerings from the provided BSCSE / BSDS dataset. The catalog is preloaded: visitors do **not** need to upload a PDF. This is an independent student project, not an official UIU service. Course sections, faculty assignments and times may change; confirm details through official UIU channels before registration.
+> **Current catalog:** United International University — Fall 2026 BSCSE and BSDS course offerings. This is an independent student project, **not** an official UIU registration service. Double-check final section availability, faculty, rooms, and timings with UIU before registering.
 
 ## Features
 
-- **Preloaded UIU courses** — search by course code or title, filter by program, and pick courses.
-- **Conflict-free routine generation** — one section per selected course; overlapping class times are rejected.
-- **Optional faculty preferences** — prioritize routines matching chosen instructors. When all preferences cannot be met, show the highest achievable matches and describe identifiable overlaps.
-- **Preferred Faculty Only** — show routines with the maximum available faculty matches when an exact match is impossible.
-- **Class-day filters** — show routines with 1–5 class days per week; select multiple day counts.
-- **Morning / Noon sorting** — rank schedules toward the chosen time of day; it does **not** require every class to fall in that period.
-- **Compare and export** — compare routine tables and export PDF, PNG, XLSX or CSV, including course credits.
-- **Conditional sections** — “If Required” sections are used only when regular sections cannot form a complete valid routine; availability must be confirmed by UIU.
+- **Preloaded course catalog** — search by course code or title; select courses from available programs.
+- **Conflict-free scheduling** — generate feasible section combinations using every meeting's actual weekday and start/end time. Back-to-back classes are allowed.
+- **Faculty preferences** — select one or more preferred instructors per course. If not all preferences can be met, see routines with the maximum achievable matches and a dismissible popup explaining identifiable overlaps.
+- **Class-day filters** — filter for **1–5 days** per week.
+- **Morning / Noon sorting** — prioritize routines with more classes in the chosen period; classes are not required to *all* fall within it.
+- **Weekly timetable** — days down the side, class periods across the top, and positioned class cards showing course code, section, title, room, faculty, and meeting time. Empty days stay compact.
+- **Real UIU time markers** — **8:30 AM, 9:51 AM, 11:11 AM, 12:31 PM, 1:51 PM, 3:11 PM, 4:30 PM**. Classes with exceptional start times are still positioned at their actual times.
+- **Routine comparison** — compare different timetables.
+- **Six export formats** — **PDF, PNG, XLSX, CSV, JSON, and ICS**. ICS supports recurring events for calendar applications, including Google Calendar; enter actual trimester start/end dates when exporting.
+- **Conditional sections** — *If Required* sections are considered only if no complete regular-only routine is available.
 
-The scheduler enumerates valid section combinations rather than imposing an arbitrary five-routine limit. Very large searches can take time; progress/cancellation and browser/server resource limits still apply.
+Generation does not impose an arbitrary top-five results limit. Very large combinations may take significant time and memory in the browser; cancelling generation does not mean enumeration completed.
 
-## How to use
+## Getting started
 
-1. Open **https://section-planner.pages.dev/** and press **START**.
-2. Search for courses, optionally filter by program, and add your courses.
-3. If you want, select preferred faculty for individual courses.
-4. Select **Generate Routines**.
-5. Filter the results by class days or faculty matches, sort by Morning / Noon, compare routines and export your favorite option.
+1. Visit **https://section-planner.pages.dev/** and select **START**.
+2. Search for and add your courses.
+3. Optionally select preferred faculty.
+4. Generate conflict-free routines.
+5. Filter, compare, and export a routine.
 
-Faculty and time preferences affect ranking and filtering; they **never** make an overlapping class combination valid. Some preferred faculty combinations may be impossible.
+## How it's hosted
 
-## Technology
-
-- **Frontend:** HTML, CSS and JavaScript (`web_static/`)
-- **Backend:** Python, FastAPI (`webapp.py`)
-- **Scheduling:** Python (`uiu/scheduler.py`)
-- **Data:** bundled, preprocessed UIU Fall 2026 offerings (`offering_data.json`)
-- **Hosting:** Cloudflare Pages (`cloudflare/`); optional legacy Render (`render.yaml`)
-
-The source repository can stay private while the Render-hosted website is public.
-
-## Run the website locally
-
-Requires Python 3:
-
-```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -r web-requirements.txt
-.venv/bin/python -m uvicorn webapp:app --host 127.0.0.1 --port 8000
-```
-
-Open **http://127.0.0.1:8000**. Stop the server with Ctrl+C. The web app does not require PySide6 or a Linux desktop environment.
-
-## Deploy and update the catalog
-
-Production uses Cloudflare Pages, with the build output directory set to `cloudflare`. See [cloudflare/README.md](cloudflare/README.md) for deployment. The older FastAPI/Render option is documented in [WEB_DEPLOY.md](WEB_DEPLOY.md).
-
-To add offerings for another program or trimester, prepare and validate new source data first; merge on **program + course code + section within the appropriate trimester**. Do not blindly replace the current CSE/DS offerings or guess clipped titles. The present website serves one preloaded catalog; multi-trimester administration and self-service publishing are not implemented.
-
-## Project files
+**The current live edition runs on Cloudflare Pages.** It is a static site: the catalog is preloaded, and schedule generation runs locally in the visitor's browser using a Web Worker. No hosted Python backend, file upload, or account is needed for routine generation.
 
 | Path | Purpose |
 | --- | --- |
-| `webapp.py` | Website and API |
-| `web_static/` | Website interface |
-| `offering_data.json` | Bundled course-section dataset |
-| `uiu/` | Course models, scheduler, parsing and exports |
-| `render.yaml` | Render deployment configuration |
-| `web-requirements.txt` | Website dependencies |
-| `tests/` | Automated tests |
-| `main.py`, `run.sh`, `run-web.sh`, `requirements.txt` | Legacy/optional local launch tools; not required for Render hosting |
+| `cloudflare/index.html`, `cloudflare/style.css`, `cloudflare/app.js` | Live website UI and client-side exports |
+| `cloudflare/scheduler-worker.js` | Browser-based exhaustive routine generation |
+| `cloudflare/offerings.json` | Published Fall 2026 UIU course offerings |
+| `cloudflare/README.md` | Cloudflare Pages deployment guide |
+| `webapp.py`, `web_static/`, `uiu/` | Retained earlier Python/FastAPI implementation and shared tooling |
+| `offering_data.json` | Original bundled processed offerings |
+| `WEB_DEPLOY.md`, `render.yaml` | Legacy server deployment reference |
 
-## Limitations and feedback
+### Deploy your own Cloudflare Pages copy
 
-This is currently designed for **United International University** and uses the uploaded Fall 2026 offering data. It does not enroll students or verify seat availability. Routine results remain in the current browser session; there is no student account or cloud-saved routine library. The Cloudflare Pages frontend is hosted statically; very large schedule searches can still strain a visitor’s device.
+Connect this repository to **Cloudflare Pages** and set:
 
-Found a bug or have a feature suggestion? Feedback is welcome. The goal is to make section selection less stressful for UIU students.
+- Production branch: `main`
+- Framework preset: None
+- Build command: *(empty)*
+- Build output directory: `cloudflare`
 
----
+See the [Cloudflare deployment instructions](cloudflare/README.md). The legacy FastAPI version is kept in the repository for reference; it is **not** required to run the Cloudflare Pages site.
+
+### Data and limitations
+
+- The current catalog is specifically for **UIU Fall 2026 BSCSE and BSDS**. Support for other trimesters or programs requires verified offering data.
+- Class details may change; the planner cannot reserve sections, check remaining seats, or guarantee registration.
+- Routine choices are held in the current browser session; no cloud-synced account or saved-routine database is provided.
+- PDF, PNG, and XLSX browser exports load third-party libraries; they may require access to the library CDN.
+- **JSON is a structured data export, not a Google Calendar import file.** For Google Calendar, export **ICS** and import it from Google Calendar settings.
+- Exceptionally large schedules may exceed the browser's memory or processing capacity.
+
+## Feedback
+
+Found a bug or have a feature suggestion? Suggestions are welcome — the aim is to make UIU section selection a little easier.
 
 **Made by Ayon**
