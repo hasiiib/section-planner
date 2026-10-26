@@ -1,8 +1,10 @@
-# Section Planner — Deployment and maintenance
+# Section Planner — Legacy FastAPI / Render deployment
 
-**Production site:** https://section-planner.onrender.com/
+**Current production website:** https://section-planner.pages.dev/
 
-The active deployment is a **Python FastAPI website** serving a browser UI. It is currently configured for United International University (UIU) and preloads the Fall 2026 BSCSE/BSDS offering catalog. **Visitors do not upload course PDFs.**
+**Note:** This document covers the older FastAPI / Render deployment. For the active Cloudflare Pages version, use [cloudflare/README.md](cloudflare/README.md).
+
+The optional legacy deployment is a **Python FastAPI website** serving a browser UI. It is currently configured for United International University (UIU) and preloads the Fall 2026 BSCSE/BSDS offering catalog. **Visitors do not upload course PDFs.**
 
 ## Hosting on Render
 
