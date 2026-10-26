@@ -207,31 +207,70 @@ function exportRows(routine){
  return records.map(e=>{const day=e.day===previous?'':e.day;previous=e.day;return [day,time(e.start)+' – '+time(e.end),e.code,e.title,e.section+(e.conditional?' (If Required)':''),e.faculty||'TBA',e.credit??'Not listed',e.room||'Not listed']});
 }
 function saveBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),15000)}
+function gridExportRows(routine){
+ const records=entries(routine),markers=[...new Set(records.flatMap(x=>[x.start,x.end]))].sort((a,b)=>a-b);
+ const headings=markers.slice(0,-1).map((t,i)=>time(t)+'–'+time(markers[i+1]));
+ const days=['Sat','Sun','Mon','Tue','Wed','Thu'];
+ const cells=days.map(day=>{
+  const row=Array(markers.length).fill('');
+  row[0]=({Sat:'Saturday',Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday'})[day];
+  for(const m of records.filter(x=>x.day===day)){
+   const col=markers.indexOf(m.start)+1;
+   row[col]=[m.code+' · '+m.section,m.title,m.faculty||'TBA',m.room||'Room not listed',time(m.start)+'–'+time(m.end)].join('\n');
+  }
+  return row;
+ });
+ return {headings,days,cells,markers,records};
+}
+async function renderExportCanvas(routine){
+ if(!window.html2canvas)throw Error('Image export library could not load. Please check your connection.');
+ const stage=document.createElement('div');
+ stage.style.cssText='position:fixed;left:-12000px;top:0;width:1600px;padding:20px;background:#fff;z-index:-1';
+ const grid=weeklyGrid(routine);grid.style.minWidth='0';stage.append(grid);document.body.append(stage);
+ try{return await html2canvas(stage,{backgroundColor:'#ffffff',scale:1.6,width:1600,windowWidth:1800,logging:false})}
+ finally{stage.remove()}
+}
 function exportDialog(routine){
- const div=document.createElement('div'),p=document.createElement('p');p.textContent='Choose the format for this Class Routine.';div.append(p);
+ const div=document.createElement('div'),p=document.createElement('p');p.textContent='Choose the format for this weekly Class Routine.';div.append(p);
  for(const fmt of ['PDF','PNG','XLSX','CSV']){
   const b=document.createElement('button');b.className='secondary';b.style.margin='6px';b.textContent=fmt;
   b.onclick=async()=>{
    b.disabled=true;
    try{
-    const rows=exportRows(routine),data=[exportHeaders,...rows];
+    exportRows(routine); // Recheck all meetings for overlaps before exporting.
+    const matrix=gridExportRows(routine);
     if(fmt==='CSV'){
-     const csv=[['Class Routine'],...data].map(line=>line.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+     const data=[['Class Routine'],['Day / Time',...matrix.headings],...matrix.cells];
+     const csv=data.map(line=>line.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
      saveBlob(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}),'Class_Routine.csv');
     }else if(fmt==='XLSX'){
-     if(!window.XLSX)throw Error('Excel export library could not load; check your internet connection.');
-     const ws=XLSX.utils.aoa_to_sheet([['Class Routine'],...data]);ws['!cols']=[{wch:12},{wch:26},{wch:17},{wch:50},{wch:16},{wch:30},{wch:12},{wch:27}];
-     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Class Routine');XLSX.writeFile(wb,'Class_Routine.xlsx');
+     if(!window.XLSX)throw Error('Excel export library could not load; check your connection.');
+     const data=[['Class Routine'],['Day / Time',...matrix.headings],...matrix.cells];
+     const ws=XLSX.utils.aoa_to_sheet(data);
+     ws['!cols']=[{wch:15},...matrix.headings.map(()=>({wch:24}))];
+     ws['!rows']=[{hpt:35},{hpt:30},...matrix.days.map(()=>({hpt:110}))];
+     ws['!merges']=[];
+     for(let i=0;i<matrix.days.length;i++){
+      const day=matrix.days[i],row=matrix.cells[i];
+      for(const m of matrix.records.filter(x=>x.day===day)){
+       const from=matrix.markers.indexOf(m.start)+1,to=matrix.markers.indexOf(m.end);
+       if(to>from)ws['!merges'].push({s:{r:i+2,c:from},e:{r:i+2,c:to}});
+      }
+     }
+     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Weekly Routine');
+     XLSX.writeFile(wb,'Class_Routine.xlsx');
     }else if(fmt==='PNG'){
-     if(!window.html2canvas)throw Error('PNG export library could not load; check your internet connection.');
-     const el=table(routine);el.style.width='max-content';el.style.maxWidth='none';
-     const stage=document.createElement('div');stage.style.cssText='position:fixed;left:-10000px;top:0;background:white;padding:24px;z-index:-1';const title=document.createElement('h2');title.textContent='Class Routine';stage.append(title,el);document.body.append(stage);
-     try{const canvas=await html2canvas(stage,{backgroundColor:'#ffffff',scale:2,windowWidth:2600});const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('Unable to render PNG.');saveBlob(blob,'Class_Routine.png')}finally{stage.remove()}
+     const canvas=await renderExportCanvas(routine);
+     const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+     if(!blob)throw Error('Unable to render PNG.');saveBlob(blob,'Class_Routine.png');
     }else{
-     if(!window.jspdf?.jsPDF)throw Error('PDF export library could not load; check your internet connection.');
-     const doc=new window.jspdf.jsPDF({orientation:'landscape',format:'a3'});doc.setFontSize(18);doc.text('Class Routine',14,18);
-     if(!doc.autoTable)throw Error('PDF table library could not load.');
-     doc.autoTable({head:[exportHeaders],body:rows,startY:25,theme:'grid',styles:{fontSize:8,cellPadding:3},headStyles:{fillColor:[244,119,33]},columnStyles:{3:{cellWidth:65}},margin:{left:10,right:10}});
+     if(!window.jspdf?.jsPDF)throw Error('PDF export library could not load; check your connection.');
+     const canvas=await renderExportCanvas(routine);
+     const doc=new window.jspdf.jsPDF({orientation:'landscape',format:'a3'});
+     const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight();
+     const ratio=Math.min((pw-14)/canvas.width,(ph-14)/canvas.height);
+     const w=canvas.width*ratio,h=canvas.height*ratio;
+     doc.addImage(canvas.toDataURL('image/png'),'PNG',(pw-w)/2,(ph-h)/2,w,h);
      doc.save('Class_Routine.pdf');
     }
     $('modal').hidden=true;
