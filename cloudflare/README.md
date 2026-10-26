@@ -9,6 +9,7 @@ This folder contains the **static, browser-only edition** of Section Planner for
 - Exhaustive scheduling runs in `scheduler-worker.js` in the visitor's browser.
 - Faculty preferences, days filters, comparison and CSV/PDF/PNG/XLSX exports are included.
 - Weekly routines use a day-by-time timetable: class blocks line up against time columns. View/compare/PNG/PDF share this layout; XLSX/CSV use a compatible day-by-time grid.
+- Days without classes use compact rows. Routine exports also include structured **JSON** and recurring **ICS** calendar files. JSON is not directly importable by Google Calendar; select ICS and enter the real first and last class dates to import weekly events in the Asia/Dhaka timezone.
 - Export libraries load from jsDelivr CDN, so downloading PDF, PNG and Excel requires access to those external scripts. CSV does not.
 - This folder is isolated from the existing FastAPI website, which is left intact.
 
