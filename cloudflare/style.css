@@ -46,3 +46,8 @@
 .week-class strong{font-size:13px;line-height:1.22;font-weight:800;overflow-wrap:anywhere}
 .week-class b{font-size:10px;line-height:1.2;margin-top:auto}
 .week-shade-0{background:#fff0cf;border-color:#c9a46a}.week-shade-1{background:#e9e6fc;border-color:#a69dd7}.week-shade-2{background:#dff2e9;border-color:#8bbcac}.week-shade-3{background:#e1effe;border-color:#94b8dd}.week-shade-4{background:#e6f3dd;border-color:#a1c995}.week-shade-5{background:#ffebe3;border-color:#d8ad97}
+
+/* Empty weekdays remain visible but use only a compact strip. */
+.week-row-empty .week-lane{height:34px;background:#fafbfc}
+.week-row-empty .week-day{font-size:11px;color:#778394}
+.week-row-empty .week-empty{font-size:11px}
