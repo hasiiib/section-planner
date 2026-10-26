@@ -278,7 +278,7 @@ function exportDialog(routine){
      const data=[['Class Routine'],['Day / Time',...matrix.headings],...matrix.cells];
      const ws=XLSX.utils.aoa_to_sheet(data);
      ws['!cols']=[{wch:15},...matrix.headings.map(()=>({wch:24}))];
-     ws['!rows']=[{hpt:35},{hpt:30},...matrix.days.map(()=>({hpt:110}))];
+     ws['!rows']=[{hpt:35},{hpt:30},...matrix.cells.map(row=>({hpt:row.slice(1).some(Boolean)?110:28}))];
      ws['!merges']=[];
      for(let i=0;i<matrix.days.length;i++){
       const day=matrix.days[i],row=matrix.cells[i];
