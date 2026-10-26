@@ -248,7 +248,7 @@ function exportDialog(routine){
      if(first===null)return;
      const last=prompt('Enter the last date of classes (YYYY-MM-DD).');
      if(last===null)return;
-     const validDate=d=>/^\\d{4}-\\d{2}-\\d{2}$/.test(d)&&!Number.isNaN(Date.parse(d+'T00:00:00Z'))&&new Date(d+'T00:00:00Z').toISOString().slice(0,10)===d;
+     const validDate=d=>/^\d{4}-\d{2}-\d{2}$/.test(d)&&!Number.isNaN(Date.parse(d+'T00:00:00Z'))&&new Date(d+'T00:00:00Z').toISOString().slice(0,10)===d;
      if(!validDate(first)||!validDate(last)||last<first)throw Error('Please enter valid start and end dates in YYYY-MM-DD format.');
      const dayIndex={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};
      const origin=new Date(first+'T00:00:00Z'),until=last.replace(/-/g,'')+'T175959Z';
@@ -262,13 +262,13 @@ function exportDialog(routine){
       const date=new Date(origin.getTime()+offset*86400000);
       if(date.toISOString().slice(0,10)>last)continue;
       const title=section.code+' ('+section.section+') - '+section.title;
-      lines.push('BEGIN:VEVENT','UID:uiu-'+Date.now()+'-'+count+++'@section-planner','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').replace(/\\.\\d{3}Z$/,'Z'),
+      lines.push('BEGIN:VEVENT','UID:uiu-'+Date.now()+'-'+count+++'@section-planner','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z'),
        'SUMMARY:'+safe(title),'DTSTART;TZID=Asia/Dhaka:'+stamp(date,meeting.start),
        'DTEND;TZID=Asia/Dhaka:'+stamp(date,meeting.end),'RRULE:FREQ=WEEKLY;UNTIL='+until,
        'LOCATION:'+safe(meeting.room||''),'DESCRIPTION:'+safe('Faculty: '+(section.faculty||'TBA')+' | Credit: '+(section.credit||'Not listed')),'END:VEVENT');
      }
      lines.push('END:VCALENDAR');
-     saveBlob(new Blob([lines.join('\\r\\n')+'\\r\\n'],{type:'text/calendar;charset=utf-8'}),'Class_Routine.ics');
+     saveBlob(new Blob([lines.join('\r\n')+'\r\n'],{type:'text/calendar;charset=utf-8'}),'Class_Routine.ics');
     }else if(fmt==='CSV'){
      const data=[['Class Routine'],['Day / Time',...matrix.headings],...matrix.cells];
      const csv=data.map(line=>line.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
