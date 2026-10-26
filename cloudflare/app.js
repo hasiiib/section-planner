@@ -74,9 +74,8 @@ function weeklyGrid(routine){
  const axis=document.createElement('div');axis.className='week-axis';
  const corner=document.createElement('div');corner.className='week-corner';corner.textContent='DAY / TIME';axis.append(corner);
  const scale=document.createElement('div');scale.className='week-scale';
- const classStarts=[...new Set(records.map(m=>m.start))].sort((a,b)=>a-b);
- const boundaries=[...new Set([start,...classStarts,end])].sort((a,b)=>a-b);
- for(const [i,t] of boundaries.entries()){const label=document.createElement('span');label.style.left=(t-start)/(end-start)*100+'%';label.textContent=time(t);label.title='Class time: '+time(t);if(t===start)label.classList.add('week-scale-first');if(t===end)label.classList.add('week-scale-last');if(i>0&&i<boundaries.length-1&&(t-boundaries[i-1])<20)label.classList.add('week-scale-close');scale.append(label)}axis.append(scale);board.append(axis);
+ const boundaries=[510,591,671,751,831,911,990];
+ for(const t of boundaries){const label=document.createElement('span');label.style.left=(t-start)/(end-start)*100+'%';label.textContent=time(t);label.title='Class slot: '+time(t);if(t===510)label.classList.add('week-scale-first');if(t===990)label.classList.add('week-scale-last');scale.append(label)}axis.append(scale);board.append(axis);
  for(const day of activeDays){
   const row=document.createElement('div');row.className='week-row';
   const label=document.createElement('div');label.className='week-day';label.textContent=({Sat:'Saturday',Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday'})[day];row.append(label);
