@@ -51,3 +51,15 @@
 .week-row-empty .week-lane{height:34px;background:#fafbfc}
 .week-row-empty .week-day{font-size:11px;color:#778394}
 .week-row-empty .week-empty{font-size:11px}
+
+/* Actual UIU class-period labels and readable section metadata */
+.week-scale{height:48px}
+.week-scale span{top:14px;transform:translateX(-50%);font-size:11px;font-weight:800;white-space:nowrap}
+.week-scale .week-scale-first{transform:none;left:0!important;padding-left:6px}
+.week-scale .week-scale-last{transform:translateX(-100%);padding-right:6px}
+.week-class{gap:4px;padding:8px 10px}
+.week-course{font-size:13px;font-weight:800;line-height:1.15}
+.week-section,.week-room{font-size:13px;font-weight:800;line-height:1.15;overflow-wrap:anywhere}
+.week-faculty{font-size:12px;font-weight:650;line-height:1.17;overflow-wrap:anywhere}
+.week-title{font-size:14px;line-height:1.17;font-weight:800}
+.week-period{font-size:11px;line-height:1.15;margin-top:auto}
