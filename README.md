@@ -4,7 +4,7 @@
 
 Section Planner helps UIU students explore course offerings and build conflict-free class routines without manually comparing dozens of sections.
 
-**Live website:** https://section-planner.onrender.com/
+**Existing website (Render):** https://section-planner.onrender.com/\n\n**Free static Cloudflare Pages edition:** see [Cloudflare deployment guide](cloudflare/README.md). Deploy it to obtain your own `*.pages.dev` URL.
 
 > **Current coverage:** UIU Fall 2026 course offerings from the provided BSCSE / BSDS dataset. The catalog is preloaded: visitors do **not** need to upload a PDF. This is an independent student project, not an official UIU service. Course sections, faculty assignments and times may change; confirm details through official UIU channels before registration.
 
